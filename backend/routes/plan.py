@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from models.debt import PlanRequest
+
+from database import get_db
 from middleware import get_current_user
-from database import get_supabase
+from models.debt import PlanRequest
 from services.debt_planner import (
-    calculate_snowball_plan,
     calculate_avalanche_plan,
     calculate_cashflow_plan,
+    calculate_snowball_plan,
 )
 from services.openai_service import explain_repayment_plan
 
@@ -19,10 +20,15 @@ STRATEGY_MAP = {
 
 
 @router.post("/plan")
-async def create_plan(body: PlanRequest, user: dict = Depends(get_current_user)):
-    sb = get_supabase()
-    debts_resp = sb.table("debts").select("*").eq("user_id", user["id"]).execute()
-    debts = debts_resp.data or []
+def create_plan(
+    body: PlanRequest,
+    user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    conn = db
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM debts WHERE user_id = %s", (user["id"],))
+        debts = cur.fetchall() or []
 
     if not debts:
         raise HTTPException(status_code=400, detail="No debts found to plan")
@@ -30,7 +36,10 @@ async def create_plan(body: PlanRequest, user: dict = Depends(get_current_user))
     calculate_fn = STRATEGY_MAP[body.strategy]
     plan = calculate_fn(debts, extra_monthly=50)
 
-    explanation = await explain_repayment_plan(plan)
-    plan["explanation"] = explanation
+    try:
+        explanation = explain_repayment_plan(plan)
+        plan["explanation"] = explanation
+    except Exception:
+        plan["explanation"] = "AI explanation temporarily unavailable. Please try again later."
 
     return plan

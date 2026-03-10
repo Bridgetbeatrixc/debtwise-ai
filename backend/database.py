@@ -1,7 +1,13 @@
-from supabase import create_client, Client
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
 from config import get_settings
 
 
-def get_supabase() -> Client:
+def get_db():
     settings = get_settings()
-    return create_client(settings.supabase_url, settings.supabase_key)
+    conn = psycopg2.connect(settings.database_url, cursor_factory=RealDictCursor)
+    try:
+        yield conn
+    finally:
+        conn.close()

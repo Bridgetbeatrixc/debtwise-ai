@@ -1,8 +1,10 @@
-from openai import AsyncOpenAI
-from config import get_settings
-from typing import AsyncGenerator
+from typing import Generator
 
-SYSTEM_PROMPT = """You are DebtWise AI, an expert financial advisor specializing in consumer debt management, 
+import google.generativeai as genai
+
+from config import get_settings
+
+SYSTEM_PROMPT = """You are DebtWise AI, an expert financial advisor specializing in consumer debt management,
 particularly Buy Now Pay Later (BNPL), credit cards, personal loans, and digital loans.
 
 You help users understand their debt situation, create repayment strategies, and make informed financial decisions.
@@ -12,17 +14,18 @@ Never recommend taking on more debt. Always encourage responsible financial beha
 When the user asks about their debts, use the provided debt context to give specific, personalized advice."""
 
 
-async def get_openai_client() -> AsyncOpenAI:
+def _get_gemini_model():
     settings = get_settings()
-    return AsyncOpenAI(api_key=settings.openai_api_key)
+    genai.configure(api_key=settings.google_api_key)
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 
 def build_debt_context(debts: list) -> str:
     if not debts:
         return "The user has no debts recorded yet."
 
-    total_balance = sum(d.get("balance", 0) for d in debts)
-    total_minimum = sum(d.get("minimum_payment", 0) for d in debts)
+    total_balance = sum(float(d.get("balance", 0)) for d in debts)
+    total_minimum = sum(float(d.get("minimum_payment", 0)) for d in debts)
 
     lines = [
         f"User's Debt Summary:",
@@ -34,44 +37,48 @@ def build_debt_context(debts: list) -> str:
     ]
 
     for d in debts:
+        due = d.get("due_date")
+        due_str = str(due) if due else ""
         lines.append(
             f"- {d['provider']} ({d['debt_type']}): "
-            f"${d['balance']:,.2f} balance, "
-            f"{d['interest_rate']}% APR, "
-            f"${d['minimum_payment']:,.2f}/mo minimum"
-            f"{', due ' + d['due_date'] if d.get('due_date') else ''}"
+            f"${float(d['balance']):,.2f} balance, "
+            f"{float(d['interest_rate'])}% APR, "
+            f"${float(d['minimum_payment']):,.2f}/mo minimum"
+            f"{', due ' + due_str if due_str else ''}"
         )
 
     return "\n".join(lines)
 
 
-async def generate_chat_response(
+def generate_chat_response(
     messages: list[dict],
     debt_context: str,
-) -> AsyncGenerator[str, None]:
-    client = await get_openai_client()
+) -> Generator[str, None, None]:
+    model = _get_gemini_model()
 
-    system_message = f"{SYSTEM_PROMPT}\n\nCurrent debt context:\n{debt_context}"
-
-    api_messages = [{"role": "system", "content": system_message}]
+    history_lines: list[str] = []
     for msg in messages:
-        api_messages.append({"role": msg["role"], "content": msg["message"]})
+        role = msg.get("role", "user")
+        prefix = "User" if role == "user" else "Assistant"
+        history_lines.append(f"{prefix}: {msg.get('message', '')}")
 
-    stream = await client.chat.completions.create(
-        model="gpt-4o",
-        messages=api_messages,
-        stream=True,
-        temperature=0.7,
-        max_tokens=1000,
+    full_prompt = (
+        f"{SYSTEM_PROMPT}\n\n"
+        f"Current debt context:\n{debt_context}\n\n"
+        "Conversation so far:\n"
+        + "\n".join(history_lines)
+        + "\n\nRespond as DebtWise AI to the user's latest message."
     )
 
-    async for chunk in stream:
-        if chunk.choices[0].delta.content:
-            yield chunk.choices[0].delta.content
+    response = model.generate_content(full_prompt, stream=True)
+    for chunk in response:
+        text = getattr(chunk, "text", None)
+        if text:
+            yield text
 
 
-async def generate_monthly_insight(debt_summary: dict) -> str:
-    client = await get_openai_client()
+def generate_monthly_insight(debt_summary: dict) -> str:
+    model = _get_gemini_model()
 
     prompt = f"""Based on this user's financial data, generate a concise monthly insight report.
 
@@ -92,21 +99,12 @@ Generate a report with:
 
 Keep it concise, friendly, and specific to the numbers provided."""
 
-    response = await client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are DebtWise AI, a financial insights engine. Be concise and data-driven."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.7,
-        max_tokens=500,
-    )
-
-    return response.choices[0].message.content
+    response = model.generate_content(prompt)
+    return response.text or ""
 
 
-async def explain_repayment_plan(plan_data: dict) -> str:
-    client = await get_openai_client()
+def explain_repayment_plan(plan_data: dict) -> str:
+    model = _get_gemini_model()
 
     prompt = f"""Explain this debt repayment plan in a friendly, encouraging way:
 
@@ -118,14 +116,5 @@ Monthly payment: ${plan_data.get('monthly_payment', 0):,.2f}
 
 Explain why this strategy works and motivate the user. Keep it to 3-4 sentences."""
 
-    response = await client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are DebtWise AI. Explain financial plans clearly and encouragingly."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.7,
-        max_tokens=300,
-    )
-
-    return response.choices[0].message.content
+    response = model.generate_content(prompt)
+    return response.text or ""
