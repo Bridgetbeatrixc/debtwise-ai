@@ -1,0 +1,156 @@
+import {
+  AuthResponse,
+  Debt,
+  DebtCreate,
+  DebtUpdate,
+  ChatMessageType,
+  SimulationResult,
+  RepaymentPlan,
+  Insight,
+} from "./types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("debtwise_token");
+}
+
+async function apiFetch<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: "Request failed" }));
+    throw new Error(error.detail || "Request failed");
+  }
+
+  return res.json();
+}
+
+// Auth
+export async function signup(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>("/auth/signup", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function login(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+// Debts
+export async function getDebts(): Promise<Debt[]> {
+  return apiFetch<Debt[]>("/debts");
+}
+
+export async function createDebt(debt: DebtCreate): Promise<Debt> {
+  return apiFetch<Debt>("/debts", {
+    method: "POST",
+    body: JSON.stringify(debt),
+  });
+}
+
+export async function updateDebt(
+  id: string,
+  debt: DebtUpdate
+): Promise<Debt> {
+  return apiFetch<Debt>(`/debts/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(debt),
+  });
+}
+
+export async function deleteDebt(id: string): Promise<void> {
+  await apiFetch(`/debts/${id}`, { method: "DELETE" });
+}
+
+// Chat
+export async function getChatHistory(): Promise<ChatMessageType[]> {
+  return apiFetch<ChatMessageType[]>("/chat/history");
+}
+
+export async function sendChatMessage(
+  message: string,
+  onToken: (token: string) => void
+): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ message }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Chat request failed");
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("No response body");
+
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onToken(decoder.decode(value, { stream: true }));
+  }
+}
+
+// Simulation
+export async function simulatePayment(
+  extraMonthly: number
+): Promise<SimulationResult> {
+  return apiFetch<SimulationResult>("/simulate", {
+    method: "POST",
+    body: JSON.stringify({ extra_monthly_payment: extraMonthly }),
+  });
+}
+
+// Plan
+export async function getRepaymentPlan(
+  strategy: string
+): Promise<RepaymentPlan> {
+  return apiFetch<RepaymentPlan>("/plan", {
+    method: "POST",
+    body: JSON.stringify({ strategy }),
+  });
+}
+
+// Insights
+export async function getInsights(): Promise<Insight[]> {
+  return apiFetch<Insight[]>("/insights");
+}
+
+export async function generateInsight(): Promise<{ summary: string }> {
+  return apiFetch<{ summary: string }>("/insights/generate", {
+    method: "POST",
+  });
+}
