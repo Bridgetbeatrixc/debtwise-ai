@@ -188,3 +188,44 @@ Do not add unrelated financial advice. Focus only on explaining this repayment p
 
     response = model.generate_content(prompt)
     return response.text or ""
+
+
+def generate_purchase_verdict(
+    product_name: str,
+    price: float,
+    total_cost: float,
+    monthly_installment: float,
+    installment_months: int,
+    provider: str,
+    current_total_debt: float,
+    extra_months: int,
+    extra_interest: float,
+) -> str:
+    model = _get_gemini_model()
+
+    prompt = f"""You are DebtWise AI. A user is considering a new purchase on installments.
+Analyze whether they should proceed given their current debt situation.
+
+Purchase Details:
+- Product: {product_name}
+- Price: Rp {price:,.0f}
+- Provider: {provider}
+- Installment: {installment_months} months at Rp {monthly_installment:,.0f}/mo
+- Total cost with interest: Rp {total_cost:,.0f} (markup: Rp {total_cost - price:,.0f})
+
+User's Current Situation:
+- Existing total debt: Rp {current_total_debt:,.0f}
+- This purchase pushes their debt-free date back by {extra_months} month(s)
+- Additional interest cost: Rp {extra_interest:,.0f}
+
+Instructions:
+1. Give a clear verdict: PROCEED WITH CAUTION, NOT RECOMMENDED, or OK TO PROCEED
+2. Explain the real cost in simple terms
+3. Mention the impact on their debt-free timeline
+4. Ask them to consider: "Do you really need this right now?"
+5. If the markup is high or debt is already heavy, be direct about it
+
+Keep it to 3-4 sentences. Be empathetic but honest."""
+
+    response = model.generate_content(prompt)
+    return response.text or "Unable to generate analysis."

@@ -7,6 +7,9 @@ import {
   SimulationResult,
   RepaymentPlan,
   Insight,
+  PurchaseInfoResponse,
+  PurchaseImpactRequest,
+  PurchaseImpactResult,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -152,5 +155,24 @@ export async function getInsights(): Promise<Insight[]> {
 export async function generateInsight(): Promise<{ summary: string }> {
   return apiFetch<{ summary: string }>("/insights/generate", {
     method: "POST",
+  });
+}
+
+// Purchase Simulator
+export async function fetchPurchaseInfo(
+  url: string
+): Promise<PurchaseInfoResponse> {
+  return apiFetch<PurchaseInfoResponse>("/simulate/purchase-info", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+}
+
+export async function simulatePurchaseImpact(
+  data: PurchaseImpactRequest
+): Promise<PurchaseImpactResult> {
+  return apiFetch<PurchaseImpactResult>("/simulate/purchase-impact", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }

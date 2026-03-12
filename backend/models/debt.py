@@ -61,6 +61,18 @@ class PlanRequest(BaseModel):
     strategy: str = Field(pattern="^(snowball|avalanche|cashflow)$")
 
 
+class PurchaseInfoRequest(BaseModel):
+    url: str
+
+
+class PurchaseImpactRequest(BaseModel):
+    product_name: str = ""
+    price: float = Field(gt=0)
+    provider: str = "Shopee PayLater"
+    installment_months: int = Field(ge=1, le=60, default=6)
+    interest_rate: float = Field(ge=0, le=100, default=2.95)
+
+
 class InsightResponse(BaseModel):
     id: str
     user_id: str

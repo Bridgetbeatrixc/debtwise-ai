@@ -95,3 +95,33 @@ export interface Insight {
   summary: string;
   created_at?: string;
 }
+
+export interface PurchaseInfoResponse {
+  product_name: string | null;
+  price: number | null;
+  image_url: string | null;
+  source: string;
+  error: string | null;
+}
+
+export interface PurchaseImpactRequest {
+  product_name: string;
+  price: number;
+  provider: string;
+  installment_months: number;
+  interest_rate: number;
+}
+
+export interface PurchaseImpactResult {
+  product_name: string;
+  price: number;
+  monthly_installment: number;
+  total_cost: number;
+  interest_markup: number;
+  interest_markup_pct: number;
+  current_debt_free_date: string;
+  new_debt_free_date: string;
+  extra_months: number;
+  extra_interest: number;
+  ai_verdict: string;
+}
