@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,10 +39,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-            DW
-          </div>
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
+          <Image src="/logo-debtwise-transparent.png" alt="DebtWise AI" width={48} height={48} className="mx-auto mb-2 rounded-lg" />
+          <CardTitle className="font-display text-2xl">Welcome back</CardTitle>
           <CardDescription>Sign in to your DebtWise AI account</CardDescription>
         </CardHeader>
         <CardContent>

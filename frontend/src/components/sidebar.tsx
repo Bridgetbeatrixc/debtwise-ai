@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -38,7 +39,6 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         className="fixed top-4 left-4 z-50 rounded-lg border bg-background p-2 lg:hidden"
         onClick={() => setOpen(!open)}
@@ -46,7 +46,6 @@ export function Sidebar() {
         {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
-      {/* Overlay */}
       {open && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -54,18 +53,19 @@ export function Sidebar() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-card transition-transform lg:static lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center gap-2 border-b px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-            DW
-          </div>
-          <span className="text-lg font-bold">DebtWise AI</span>
+        <div className="flex h-16 items-center gap-2.5 border-b px-5">
+          <Image src="/logo-debtwise-transparent.png" alt="DebtWise AI" width={32} height={32} className="rounded-md" />
+          <span className="font-display text-lg font-bold tracking-tight">
+            <span className="text-blue-700">Debt</span>
+            <span className="text-blue-500">Wise</span>
+            <span className="text-blue-400 text-sm align-super ml-0.5">AI</span>
+          </span>
         </div>
 
         <nav className="flex-1 space-y-1 px-3 py-4">
