@@ -4,14 +4,57 @@ import google.generativeai as genai
 
 from config import get_settings
 
-SYSTEM_PROMPT = """You are DebtWise AI, an expert financial advisor specializing in consumer debt management,
+SYSTEM_PROMPT = """
+You are DebtWise AI, an expert financial advisor specializing in consumer debt management,
 particularly Buy Now Pay Later (BNPL), credit cards, personal loans, and digital loans.
 
-You help users understand their debt situation, create repayment strategies, and make informed financial decisions.
-Be empathetic, clear, and actionable in your advice. Use specific numbers from the user's debt data when available.
-Never recommend taking on more debt. Always encourage responsible financial behavior.
+Your goal is to help users understand their debt situation, create repayment strategies,
+and make informed financial decisions.
 
-When the user asks about their debts, use the provided debt context to give specific, personalized advice."""
+COMMUNICATION STYLE
+- Be empathetic, supportive, and non-judgmental.
+- Be clear, practical, and actionable.
+- Use specific numbers from the user's debt data when available.
+- Encourage responsible financial behavior.
+- Never recommend taking on more debt.
+
+ANSWERING PRINCIPLES
+1. Answer ONLY what the user asks.
+2. Do NOT provide extra explanations unless the user requests them.
+3. Keep responses concise and relevant.
+4. Use the user's debt context to personalize answers when applicable.
+
+DETAIL LEVEL RULES
+- If the user asks a general question (e.g., "What debts do I have?"):
+  Provide a short summary of their debts.
+
+- If the user asks for details (e.g., "Explain my debts in detail"):
+  Provide a structured overview that highlights the key points only:
+  • debt type
+  • total amount
+  • remaining balance
+  • due date or payment status
+  Avoid listing unnecessary metadata or internal fields.
+
+- If the user asks about a specific debt:
+  Provide information only about that debt.
+
+- If the user asks for advice or strategy:
+  Give concise, actionable recommendations based on their situation.
+
+RESPONSE STRUCTURE
+Prefer structured responses when possible:
+- Short summary first
+- Bullet points for key information
+- Advice only when explicitly requested
+
+IMPORTANT CONSTRAINT
+Do not overwhelm the user with full datasets, raw tables, or excessive detail.
+Always summarize information unless the user explicitly asks for a full breakdown.
+
+When the user asks about their debts, use the provided debt context to give
+specific, personalized answers that match the exact scope of the question.
+"""
 
 
 def _get_gemini_model():
@@ -67,7 +110,7 @@ def generate_chat_response(
         f"Current debt context:\n{debt_context}\n\n"
         "Conversation so far:\n"
         + "\n".join(history_lines)
-        + "\n\nRespond as DebtWise AI to the user's latest message."
+        + "\n\nRespond as DebtWise AI to the user's latest message. Follow the system rules and keep the response concise."
     )
 
     response = model.generate_content(full_prompt, stream=True)
@@ -80,7 +123,7 @@ def generate_chat_response(
 def generate_monthly_insight(debt_summary: dict) -> str:
     model = _get_gemini_model()
 
-    prompt = f"""Based on this user's financial data, generate a concise monthly insight report.
+    prompt = f"""Generate a concise monthly financial insight based strictly on the user's debt summary below.
 
 Debt Summary:
 - Total debt: ${debt_summary.get('total_debt', 0):,.2f}
@@ -91,11 +134,24 @@ Debt Summary:
 - Total payments this month: ${debt_summary.get('total_payments', 0):,.2f}
 - BNPL spending change: {debt_summary.get('bnpl_change_pct', 0):.1f}%
 
-Generate a report with:
-1. Debt change summary (one sentence)
-2. BNPL usage observation (one sentence)
-3. Spending pattern note (one sentence)
-4. One actionable recommendation
+Instructions:
+Write a short monthly insight that helps the user understand their financial progress.
+
+The response should include:
+1. **Debt change summary** — one sentence explaining whether total debt increased or decreased.
+2. **BNPL usage observation** — one sentence explaining how Buy Now Pay Later usage is changing.
+3. **Spending pattern note** — one sentence identifying a pattern based on the numbers.
+4. **One actionable recommendation** — a short practical suggestion the user can follow next month.
+
+Formatting rules:
+- Use **bold formatting for important numbers**.
+- Use **bullet points for each insight**.
+- Keep the report short and easy to scan.
+- Reference the provided numbers when explaining the insights.
+- Do not invent additional data.
+
+Tone:
+Supportive, practical, and neutral — like a financial advisor giving a quick monthly check-in.
 
 Keep it concise, friendly, and specific to the numbers provided."""
 
@@ -106,15 +162,29 @@ Keep it concise, friendly, and specific to the numbers provided."""
 def explain_repayment_plan(plan_data: dict) -> str:
     model = _get_gemini_model()
 
-    prompt = f"""Explain this debt repayment plan in a friendly, encouraging way:
+    prompt = f"""Explain the following debt repayment plan clearly and concisely for the user.
 
+Repayment Plan Data:
 Strategy: {plan_data.get('strategy', 'N/A')}
 Repayment order: {', '.join(plan_data.get('repayment_order', []))}
 Estimated debt-free date: {plan_data.get('debt_free_date', 'N/A')}
 Total interest saved vs minimum payments: ${plan_data.get('interest_saved', 0):,.2f}
 Monthly payment: ${plan_data.get('monthly_payment', 0):,.2f}
 
-Explain why this strategy works and motivate the user. Keep it to 3-4 sentences."""
+Instructions:
+- Briefly explain how the strategy works.
+- Mention the repayment order so the user understands what will be paid first.
+- Highlight the estimated debt-free date and interest savings.
+- Keep the tone supportive and practical.
+
+Formatting:
+- Start with a **short summary sentence**.
+- Use **bullet points** for the key plan details.
+- Bold important numbers such as money amounts and dates.
+- Keep the explanation concise (about 3–4 sentences total).
+
+Do not add unrelated financial advice. Focus only on explaining this repayment plan.
+"""
 
     response = model.generate_content(prompt)
     return response.text or ""
