@@ -8,7 +8,7 @@ from services.debt_planner import (
     calculate_cashflow_plan,
     calculate_snowball_plan,
 )
-from services.openai_service import explain_repayment_plan
+from services.gemini_service import explain_repayment_plan
 
 router = APIRouter(tags=["plan"])
 

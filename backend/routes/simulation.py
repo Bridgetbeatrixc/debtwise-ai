@@ -8,7 +8,7 @@ from database import get_db
 from middleware import get_current_user
 from models.debt import PurchaseImpactRequest, PurchaseInfoRequest, SimulationRequest
 from services.debt_planner import simulate_payment, _simulate_payoff
-from services.openai_service import generate_purchase_verdict
+from services.gemini_service import generate_purchase_verdict
 
 router = APIRouter(tags=["simulation"])
 

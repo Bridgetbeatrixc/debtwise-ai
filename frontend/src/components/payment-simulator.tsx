@@ -17,6 +17,8 @@ import {
   Info,
   Loader2,
   Wallet,
+  FileDown,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseSimulator } from "@/components/purchase-simulator";
+import { exportRepaymentPlanPdf, openMailtoForDebtor } from "@/lib/pdf-utils";
 
 export function PaymentSimulator() {
   const [extraPayment, setExtraPayment] = useState(100);
@@ -36,6 +39,9 @@ export function PaymentSimulator() {
   const [strategy, setStrategy] = useState("avalanche");
   const [simulating, setSimulating] = useState(false);
   const [planning, setPlanning] = useState(false);
+  const [debtorCompany, setDebtorCompany] = useState("");
+  const [debtorEmail, setDebtorEmail] = useState("");
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   async function handleSimulate() {
     if (extraPayment < 0) {
@@ -63,6 +69,29 @@ export function PaymentSimulator() {
     } finally {
       setPlanning(false);
     }
+  }
+
+  async function handleExportPlanPdf() {
+    if (!planResult) return;
+    setExportingPdf(true);
+    try {
+      await exportRepaymentPlanPdf(planResult, debtorCompany || undefined, debtorEmail || undefined);
+      toast.success("PDF exported");
+    } catch {
+      toast.error("Failed to export PDF");
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
+  function handleSendToDebtor() {
+    if (!debtorEmail?.trim()) {
+      toast.error("Enter debtor email to send");
+      return;
+    }
+    const fileName = `DebtWise-Repayment-Plan-${planResult?.strategy ?? "plan"}.pdf`;
+    openMailtoForDebtor(debtorEmail.trim(), debtorCompany.trim() || "Debtor", fileName);
+    toast.success("Opening email client...");
   }
 
   const fmt = (n: number) =>
@@ -406,6 +435,54 @@ export function PaymentSimulator() {
                     </div>
                   </>
                 )}
+
+                <Separator />
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Export &amp; direct to debtor company</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <Label className="text-xs">Company / Creditor name</Label>
+                      <Input
+                        placeholder="e.g. Shopee PayLater"
+                        value={debtorCompany}
+                        onChange={(e) => setDebtorCompany(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Debtor / creditor email</Label>
+                      <Input
+                        type="email"
+                        placeholder="email@company.com"
+                        value={debtorEmail}
+                        onChange={(e) => setDebtorEmail(e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportPlanPdf}
+                      disabled={exportingPdf}
+                      className="gap-2"
+                    >
+                      <FileDown className="h-4 w-4" />
+                      {exportingPdf ? "Exporting..." : "Export PDF"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSendToDebtor}
+                      disabled={!debtorEmail?.trim()}
+                      className="gap-2"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Send to debtor
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}

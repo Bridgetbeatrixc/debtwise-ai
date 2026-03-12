@@ -7,7 +7,7 @@ from config import get_settings
 from database import get_db
 from middleware import get_current_user
 from models.debt import ChatMessage
-from services.openai_service import build_debt_context, generate_chat_response
+from services.gemini_service import build_debt_context, generate_chat_response
 
 router = APIRouter(tags=["chat"])
 
@@ -65,8 +65,17 @@ def get_chat_history(user: dict = Depends(get_current_user), db=Depends(get_db))
     conn = db
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT * FROM chat_history WHERE user_id = %s ORDER BY created_at ASC LIMIT 50",
+            "SELECT * FROM chat_history WHERE user_id = %s ORDER BY created_at ASC LIMIT 200",
             (user["id"],),
         )
         rows = cur.fetchall()
     return rows
+
+
+@router.post("/chat/clear")
+def clear_chat_history(user: dict = Depends(get_current_user), db=Depends(get_db)):
+    conn = db
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM chat_history WHERE user_id = %s", (user["id"],))
+        conn.commit()
+    return {"ok": True}

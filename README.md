@@ -310,7 +310,7 @@ debtwise-ai/
 │   │   ├── plan.py            # Repayment plan endpoint
 │   │   └── insights.py        # Monthly insights endpoints
 │   └── services/
-│       ├── openai_service.py  # Gemini AI integration
+│       ├── gemini_service.py  # Gemini AI integration
 │       ├── debt_planner.py    # Snowball/Avalanche/Cashflow logic
 │       └── insight_engine.py  # Insight data aggregation
 ├── frontend/

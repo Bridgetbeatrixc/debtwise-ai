@@ -12,7 +12,7 @@ import {
   PurchaseImpactResult,
 } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8002";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -96,6 +96,34 @@ export async function deleteDebt(id: string): Promise<void> {
 // Chat
 export async function getChatHistory(): Promise<ChatMessageType[]> {
   return apiFetch<ChatMessageType[]>("/chat/history");
+}
+
+export async function deleteChatHistory(): Promise<void> {
+  const token = getToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const res = await fetch(`${API_URL}/chat/clear`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({}),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText || "Request failed" }));
+    throw new Error(err.detail || `Delete failed (${res.status})`);
+  }
+
+  const text = await res.text();
+  if (text) {
+    try {
+      JSON.parse(text);
+    } catch {
+      /* response not json, ignore */
+    }
+  }
 }
 
 export async function sendChatMessage(

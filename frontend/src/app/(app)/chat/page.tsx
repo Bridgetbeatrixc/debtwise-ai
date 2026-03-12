@@ -1,33 +1,88 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send } from "lucide-react";
-import { getChatHistory, sendChatMessage } from "@/lib/api";
+import { Send, Trash2, MessageSquare, ChevronRight } from "lucide-react";
+import { getChatHistory, sendChatMessage, deleteChatHistory } from "@/lib/api";
 import { ChatMessageType } from "@/lib/types";
 import { ChatMessage, TypingIndicator } from "@/components/chat-message";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+function groupByDate(messages: ChatMessageType[]): { dateLabel: string; dateKey: string; msgs: ChatMessageType[] }[] {
+  const groups = new Map<string, ChatMessageType[]>();
+  for (const m of messages) {
+    const d = m.created_at ? new Date(m.created_at) : new Date();
+    const key = d.toDateString();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(m);
+  }
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 864e5).toDateString();
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => (a < b ? 1 : -1))
+    .map(([k, msgs]) => ({
+      dateKey: k,
+      dateLabel: k === today ? "Today" : k === yesterday ? "Yesterday" : new Date(k).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      msgs,
+    }));
+}
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const dateGroups = useMemo(() => groupByDate(messages), [messages]);
+  const displayMessages = selectedDateKey
+    ? (dateGroups.find((g) => g.dateKey === selectedDateKey)?.msgs ?? messages)
+    : messages;
+
+  function loadHistory() {
     getChatHistory()
       .then(setMessages)
       .catch(() => {})
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadHistory();
   }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isStreaming]);
+  }, [displayMessages, isStreaming]);
+
+  async function handleDelete() {
+    try {
+      await deleteChatHistory();
+      setMessages([]);
+      setSelectedDateKey(null);
+      setDeleteDialogOpen(false);
+      toast.success("Chat history cleared");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to delete chat history";
+      toast.error(msg);
+    }
+  }
 
   async function handleSend() {
     const text = input.trim();
@@ -94,18 +149,73 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] flex-col">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight">AI Advisor</h1>
-        <p className="text-muted-foreground">
-          Chat with DebtWise AI about your debt situation
-        </p>
+    <div className="flex h-[calc(100vh-6rem)] gap-4">
+      {/* Past chat history sidebar */}
+      {dateGroups.length > 0 && (
+        <div className="w-52 shrink-0 space-y-1 rounded-lg border p-2">
+          <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Past Chats</p>
+          {dateGroups.map((g) => (
+            <button
+              key={g.dateKey}
+              onClick={() => setSelectedDateKey(selectedDateKey === g.dateKey ? null : g.dateKey)}
+              className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors ${
+                selectedDateKey === g.dateKey ? "bg-primary/10 text-primary" : "hover:bg-muted"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 shrink-0" />
+                {g.dateLabel}
+              </span>
+              <ChevronRight className={`h-4 w-4 shrink-0 ${selectedDateKey === g.dateKey ? "rotate-90" : ""}`} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">AI Advisor</h1>
+          <p className="text-muted-foreground">
+            Chat with DebtWise AI about your debt situation
+          </p>
+        </div>
+        {messages.length > 0 && (
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4" />
+                Delete chat
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete chat history?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete all your chat messages. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    await handleDelete();
+                    setDeleteDialogOpen(false);
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       <div className="flex-1 overflow-hidden rounded-lg border">
         <ScrollArea className="h-full p-4" ref={scrollRef}>
           <div className="space-y-4">
-            {messages.length === 0 && (
+            {displayMessages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Send className="h-8 w-8" />
@@ -136,7 +246,7 @@ export default function ChatPage() {
               </div>
             )}
 
-            {messages.map((msg, i) => (
+            {displayMessages.map((msg, i) => (
               <ChatMessage key={msg.id || i} role={msg.role} content={msg.message} />
             ))}
 
@@ -164,6 +274,7 @@ export default function ChatPage() {
         >
           <Send className="h-4 w-4" />
         </Button>
+      </div>
       </div>
     </div>
   );

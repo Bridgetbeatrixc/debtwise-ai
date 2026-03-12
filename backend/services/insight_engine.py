@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from config import get_settings
-from services.openai_service import generate_monthly_insight
+from services.gemini_service import generate_monthly_insight
 
 
 def generate_insight_for_user(user_id: str) -> str:
