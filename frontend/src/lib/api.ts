@@ -12,10 +12,10 @@ import {
   PurchaseImpactResult,
 } from "./types";
 
+// Use full backend URL when set (production); otherwise /api for local rewrite
 const API_URL =
-  typeof window !== "undefined"
-    ? "/api"
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8002";
+  (process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? "/api" : "http://localhost:8002")
+  ).replace(/\/$/, ""); // strip trailing slash
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -113,8 +113,7 @@ export async function sendChatMessage(
   onToken: (token: string) => void
 ): Promise<void> {
   const token = getToken();
-  const baseUrl = typeof window !== "undefined" ? "/api" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8002");
-  const res = await fetch(`${baseUrl}/chat`, {
+  const res = await fetch(`${API_URL}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
