@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Trash2, MessageSquare, ChevronRight } from "lucide-react";
+import { Send, Trash2, MessageSquare, ChevronRight, History } from "lucide-react";
 import { getChatHistory, sendChatMessage, deleteChatHistory } from "@/lib/api";
 import { ChatMessageType } from "@/lib/types";
 import { ChatMessage, TypingIndicator } from "@/components/chat-message";
@@ -20,6 +20,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 function groupByDate(messages: ChatMessageType[]): { dateLabel: string; dateKey: string; msgs: ChatMessageType[] }[] {
   const groups = new Map<string, ChatMessageType[]>();
@@ -47,6 +54,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [pastChatsSheetOpen, setPastChatsSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const dateGroups = useMemo(() => groupByDate(messages), [messages]);
@@ -148,39 +156,65 @@ export default function ChatPage() {
     );
   }
 
+  const pastChatsContent = (
+    <div className="space-y-1">
+      {dateGroups.map((g) => (
+        <button
+          key={g.dateKey}
+          onClick={() => {
+            setSelectedDateKey(selectedDateKey === g.dateKey ? null : g.dateKey);
+            setPastChatsSheetOpen(false);
+          }}
+          className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors ${
+            selectedDateKey === g.dateKey ? "bg-primary/10 text-primary" : "hover:bg-muted"
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 shrink-0" />
+            {g.dateLabel}
+          </span>
+          <ChevronRight className={`h-4 w-4 shrink-0 ${selectedDateKey === g.dateKey ? "rotate-90" : ""}`} />
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="flex h-[calc(100vh-6rem)] gap-4">
-      {/* Past chat history sidebar */}
+    <div className="flex h-[calc(100dvh-8rem)] min-h-[400px] flex-col gap-4 md:h-[calc(100vh-8rem)] md:flex-row md:gap-4">
+      {/* Past chat history sidebar - hidden on mobile, shown via sheet */}
       {dateGroups.length > 0 && (
-        <div className="w-52 shrink-0 space-y-1 rounded-lg border p-2">
+        <div className="hidden w-full shrink-0 space-y-1 rounded-lg border p-2 md:block md:w-52">
           <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Past Chats</p>
-          {dateGroups.map((g) => (
-            <button
-              key={g.dateKey}
-              onClick={() => setSelectedDateKey(selectedDateKey === g.dateKey ? null : g.dateKey)}
-              className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition-colors ${
-                selectedDateKey === g.dateKey ? "bg-primary/10 text-primary" : "hover:bg-muted"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 shrink-0" />
-                {g.dateLabel}
-              </span>
-              <ChevronRight className={`h-4 w-4 shrink-0 ${selectedDateKey === g.dateKey ? "rotate-90" : ""}`} />
-            </button>
-          ))}
+          {pastChatsContent}
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">AI Advisor</h1>
-          <p className="text-muted-foreground">
+      <div className="flex min-w-0 flex-1 flex-col min-h-0">
+      <div className="mb-2 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">AI Advisor</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground sm:text-base">
             Chat with DebtWise AI about your debt situation
           </p>
         </div>
-        {messages.length > 0 && (
+        <div className="flex shrink-0 items-center gap-2">
+          {dateGroups.length > 0 && (
+            <Sheet open={pastChatsSheetOpen} onOpenChange={setPastChatsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 md:hidden">
+                  <History className="h-4 w-4" />
+                  Past
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 max-w-[85vw]">
+                <SheetHeader>
+                  <SheetTitle>Past Chats</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 overflow-y-auto pb-4">{pastChatsContent}</div>
+              </SheetContent>
+            </Sheet>
+          )}
+          {messages.length > 0 && (
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive">
@@ -210,6 +244,7 @@ export default function ChatPage() {
             </AlertDialogContent>
           </AlertDialog>
         )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-hidden rounded-lg border">

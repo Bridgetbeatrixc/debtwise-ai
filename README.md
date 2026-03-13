@@ -221,7 +221,7 @@ Done! You can now login with:
 Start the backend server:
 
 ```bash
-uvicorn main:app --reload --port 8000
+uvicorn main:app --reload --port 8000222
 ```
 
 The API will be available at `http://localhost:8000`. You can view the interactive API docs at `http://localhost:8000/docs`.

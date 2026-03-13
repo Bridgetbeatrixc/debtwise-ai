@@ -9,10 +9,10 @@ from middleware import get_current_user
 from models.debt import ChatMessage
 from services.gemini_service import build_debt_context, generate_chat_response
 
-router = APIRouter(tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-@router.post("/chat")
+@router.post("")
 def chat(body: ChatMessage, user: dict = Depends(get_current_user), db=Depends(get_db)):
     conn = db
     with conn.cursor() as cur:
@@ -60,7 +60,7 @@ def chat(body: ChatMessage, user: dict = Depends(get_current_user), db=Depends(g
     return StreamingResponse(stream_response(), media_type="text/plain")
 
 
-@router.get("/chat/history")
+@router.get("/history")
 def get_chat_history(user: dict = Depends(get_current_user), db=Depends(get_db)):
     conn = db
     with conn.cursor() as cur:
@@ -72,7 +72,7 @@ def get_chat_history(user: dict = Depends(get_current_user), db=Depends(get_db))
     return rows
 
 
-@router.post("/chat/clear")
+@router.post("/clear")
 def clear_chat_history(user: dict = Depends(get_current_user), db=Depends(get_db)):
     conn = db
     with conn.cursor() as cur:

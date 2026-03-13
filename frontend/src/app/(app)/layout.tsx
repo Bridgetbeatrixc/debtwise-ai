@@ -1,19 +1,29 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Sidebar } from "@/components/sidebar";
+
+const ONBOARDING_KEY = "debtwise_onboarding_complete";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push("/login");
+      return;
     }
-  }, [user, isLoading, router]);
+    if (user && pathname !== "/onboarding") {
+      const done = typeof window !== "undefined" && localStorage.getItem(ONBOARDING_KEY);
+      if (!done) {
+        router.push("/onboarding");
+      }
+    }
+  }, [user, isLoading, pathname, router]);
 
   if (isLoading) {
     return (
@@ -29,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1 overflow-auto">
-        <div className="container mx-auto p-6 lg:p-8">{children}</div>
+        <div className="container mx-auto p-4 pl-14 sm:p-6 sm:pl-14 lg:p-8 lg:pl-8">{children}</div>
       </main>
     </div>
   );

@@ -40,7 +40,7 @@ export default function SignupPage() {
       const res = await signup(email, password);
       if (res.access_token) {
         setAuth(res.user, res.access_token);
-        router.push("/dashboard");
+        router.push("/onboarding");
       } else {
         router.push("/login");
       }
