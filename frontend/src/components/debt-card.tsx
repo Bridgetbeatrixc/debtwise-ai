@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { Debt } from "@/lib/types";
+import { useCurrency } from "@/contexts/currency-context";
 
 const TYPE_LABELS: Record<string, string> = {
   bnpl: "BNPL",
@@ -27,6 +28,7 @@ interface DebtCardProps {
 }
 
 export function DebtCard({ debt, onEdit, onDelete }: DebtCardProps) {
+  const { formatCurrency } = useCurrency();
   return (
     <Card>
       <CardContent className="p-5">
@@ -56,7 +58,7 @@ export function DebtCard({ debt, onEdit, onDelete }: DebtCardProps) {
           <div>
             <p className="text-xs text-muted-foreground">Balance</p>
             <p className="text-lg font-bold">
-              ${debt.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              {formatCurrency(debt.balance)}
             </p>
           </div>
           <div>
@@ -66,7 +68,7 @@ export function DebtCard({ debt, onEdit, onDelete }: DebtCardProps) {
           <div>
             <p className="text-xs text-muted-foreground">Min Payment</p>
             <p className="font-medium">
-              ${debt.minimum_payment.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              {formatCurrency(debt.minimum_payment)}
             </p>
           </div>
           <div>

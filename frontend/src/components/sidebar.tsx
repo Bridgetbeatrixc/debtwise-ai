@@ -5,6 +5,8 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { useCurrency } from "@/contexts/currency-context";
+import { CURRENCIES } from "@/lib/currency";
 import {
   LayoutDashboard,
   CreditCard,
@@ -14,8 +16,16 @@ import {
   LogOut,
   Menu,
   X,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState } from "react";
 
 const navItems = [
@@ -30,6 +40,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { currency, setCurrency } = useCurrency();
   const [open, setOpen] = useState(false);
 
   function handleLogout() {
@@ -91,6 +102,24 @@ export function Sidebar() {
         </nav>
 
         <div className="border-t p-4">
+          <div className="mb-3 flex items-center gap-2 px-3">
+            <DollarSign className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <Select
+              value={currency}
+              onValueChange={(v) => v && setCurrency(v as import("@/lib/currency").CurrencyCode)}
+            >
+              <SelectTrigger className="h-8 w-full border-0 bg-transparent px-0 py-1 text-xs text-muted-foreground shadow-none focus:ring-0">
+                <SelectValue placeholder="Currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.label} ({c.symbol})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="mb-3 px-3 text-xs text-muted-foreground truncate">
             {user?.email}
           </div>

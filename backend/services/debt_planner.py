@@ -1,6 +1,12 @@
 from datetime import date, timedelta
 from typing import Optional
-import copy
+
+NO_DECIMAL_CURRENCIES = ("IDR", "VND")
+
+
+def _round_amount(val: float, to_int: bool) -> float:
+    """Round amount - use int for IDR/VND to preserve full precision (no dropped 000s)."""
+    return round(val) if to_int else round(val, 2)
 
 
 def _monthly_interest_rate(annual_rate: float) -> float:
@@ -160,26 +166,57 @@ def calculate_cashflow_plan(debts: list[dict], extra_monthly: float = 0) -> dict
     }
 
 
-def simulate_payment(debts: list[dict], extra_monthly: float) -> dict:
+def _round_schedule(schedule: list, to_int: bool) -> list:
+    """Round schedule amounts for currency display (preserve 000s for IDR/VND)."""
+    out = []
+    for m in schedule:
+        out.append({
+            "month": m["month"],
+            "debts": [
+                {
+                    "provider": d["provider"],
+                    "payment": _round_amount(d["payment"], to_int),
+                    "interest": _round_amount(d["interest"], to_int),
+                    "remaining": _round_amount(d["remaining"], to_int),
+                }
+                for d in m["debts"]
+            ],
+        })
+    return out
+
+
+def round_plan_for_currency(plan: dict, currency: Optional[str] = None) -> dict:
+    """Round plan monetary values for display - use integers for IDR/VND (preserve 000s)."""
+    to_int = currency in NO_DECIMAL_CURRENCIES if currency else False
+    out = dict(plan)
+    out["total_interest_paid"] = _round_amount(plan["total_interest_paid"], to_int)
+    out["interest_saved"] = _round_amount(plan["interest_saved"], to_int)
+    out["monthly_payment"] = _round_amount(plan["monthly_payment"], to_int)
+    out["schedule"] = _round_schedule(plan.get("schedule", [])[:12], to_int)
+    return out
+
+
+def simulate_payment(debts: list[dict], extra_monthly: float, currency: Optional[str] = None) -> dict:
     """Compare current trajectory vs accelerated payments."""
+    to_int = currency in NO_DECIMAL_CURRENCIES if currency else False
     baseline = _simulate_payoff(debts, extra_monthly=0)
     accelerated = _simulate_payoff(debts, extra_monthly=extra_monthly)
+
+    interest_saved = baseline["total_interest_paid"] - accelerated["total_interest_paid"]
 
     return {
         "current": {
             "months_to_payoff": baseline["months_to_payoff"],
             "debt_free_date": baseline["debt_free_date"],
-            "total_interest": baseline["total_interest_paid"],
+            "total_interest": _round_amount(baseline["total_interest_paid"], to_int),
         },
         "accelerated": {
             "months_to_payoff": accelerated["months_to_payoff"],
             "debt_free_date": accelerated["debt_free_date"],
-            "total_interest": accelerated["total_interest_paid"],
+            "total_interest": _round_amount(accelerated["total_interest_paid"], to_int),
         },
         "months_saved": baseline["months_to_payoff"] - accelerated["months_to_payoff"],
-        "interest_saved": round(
-            baseline["total_interest_paid"] - accelerated["total_interest_paid"], 2
-        ),
-        "extra_monthly_payment": extra_monthly,
-        "schedule": accelerated["schedule"][:12],
+        "interest_saved": _round_amount(interest_saved, to_int),
+        "extra_monthly_payment": _round_amount(extra_monthly, to_int),
+        "schedule": _round_schedule(accelerated["schedule"][:12], to_int),
     }

@@ -5,6 +5,7 @@
 
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { formatCurrency, getStoredCurrency } from "./currency";
 
 const LOGO_URL = "/logo-debtwise-transparent.png";
 const MARGIN = 20;
@@ -114,7 +115,8 @@ export async function exportRepaymentPlanPdf(
 
   await addLogoToPdf(doc, pageWidth);
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const currency = getStoredCurrency();
+  const fmt = (n: number) => formatCurrency(n, currency);
   const strategyLabel = plan.strategy.charAt(0).toUpperCase() + plan.strategy.slice(1);
 
   doc.setFontSize(18);

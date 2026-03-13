@@ -7,6 +7,7 @@ from services.debt_planner import (
     calculate_avalanche_plan,
     calculate_cashflow_plan,
     calculate_snowball_plan,
+    round_plan_for_currency,
 )
 from services.gemini_service import explain_repayment_plan
 
@@ -35,6 +36,7 @@ def create_plan(
 
     calculate_fn = STRATEGY_MAP[body.strategy]
     plan = calculate_fn(debts, extra_monthly=50)
+    plan = round_plan_for_currency(plan, body.currency)
 
     try:
         explanation = explain_repayment_plan(plan)

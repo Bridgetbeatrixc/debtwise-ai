@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Debt } from "@/lib/types";
+import { useCurrency } from "@/contexts/currency-context";
 
 const TYPE_LABELS: Record<string, string> = {
   bnpl: "BNPL",
@@ -16,6 +17,7 @@ interface UpcomingPaymentsProps {
 }
 
 export function UpcomingPayments({ debts }: UpcomingPaymentsProps) {
+  const { formatCurrency } = useCurrency();
   const upcoming = debts
     .filter((d) => d.due_date)
     .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
@@ -52,9 +54,7 @@ export function UpcomingPayments({ debts }: UpcomingPaymentsProps) {
                   </div>
                 </div>
                 <span className="font-semibold">
-                  ${debt.minimum_payment.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                  })}
+                  {formatCurrency(debt.minimum_payment)}
                 </span>
               </div>
             ))}

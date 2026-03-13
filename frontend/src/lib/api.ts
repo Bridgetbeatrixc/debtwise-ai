@@ -140,21 +140,29 @@ export async function sendChatMessage(
 
 // Simulation
 export async function simulatePayment(
-  extraMonthly: number
+  extraMonthly: number,
+  currency?: string
 ): Promise<SimulationResult> {
   return apiFetch<SimulationResult>("/simulate", {
     method: "POST",
-    body: JSON.stringify({ extra_monthly_payment: extraMonthly }),
+    body: JSON.stringify({
+      extra_monthly_payment: extraMonthly,
+      currency: currency || undefined,
+    }),
   });
 }
 
 // Plan
 export async function getRepaymentPlan(
-  strategy: string
+  strategy: string,
+  currency?: string
 ): Promise<RepaymentPlan> {
   return apiFetch<RepaymentPlan>("/plan", {
     method: "POST",
-    body: JSON.stringify({ strategy }),
+    body: JSON.stringify({
+      strategy,
+      currency: currency || undefined,
+    }),
   });
 }
 

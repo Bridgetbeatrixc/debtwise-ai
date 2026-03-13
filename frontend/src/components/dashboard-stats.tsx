@@ -3,12 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, CreditCard, Calendar, TrendingDown } from "lucide-react";
 import { Debt } from "@/lib/types";
+import { useCurrency } from "@/contexts/currency-context";
 
 interface DashboardStatsProps {
   debts: Debt[];
 }
 
 export function DashboardStats({ debts }: DashboardStatsProps) {
+  const { formatCurrency } = useCurrency();
   const totalDebt = debts.reduce((sum, d) => sum + d.balance, 0);
   const totalMinPayment = debts.reduce((sum, d) => sum + d.minimum_payment, 0);
   const upcomingDebts = debts
@@ -19,13 +21,13 @@ export function DashboardStats({ debts }: DashboardStatsProps) {
   const stats = [
     {
       title: "Total Debt",
-      value: `$${totalDebt.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      value: formatCurrency(totalDebt),
       icon: DollarSign,
       description: `${debts.length} active debts`,
     },
     {
       title: "Monthly Minimum",
-      value: `$${totalMinPayment.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      value: formatCurrency(totalMinPayment),
       icon: TrendingDown,
       description: "Minimum payments due",
     },

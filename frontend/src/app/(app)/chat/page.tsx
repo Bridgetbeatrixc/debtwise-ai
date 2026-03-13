@@ -25,7 +25,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 
 function groupByDate(messages: ChatMessageType[]): { dateLabel: string; dateKey: string; msgs: ChatMessageType[] }[] {
@@ -199,29 +198,36 @@ export default function ChatPage() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {dateGroups.length > 0 && (
-            <Sheet open={pastChatsSheetOpen} onOpenChange={setPastChatsSheetOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 md:hidden">
-                  <History className="h-4 w-4" />
-                  Past
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72 max-w-[85vw]">
-                <SheetHeader>
-                  <SheetTitle>Past Chats</SheetTitle>
-                </SheetHeader>
-                <div className="mt-4 overflow-y-auto pb-4">{pastChatsContent}</div>
-              </SheetContent>
-            </Sheet>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 md:hidden"
+                onClick={() => setPastChatsSheetOpen(true)}
+              >
+                <History className="h-4 w-4" />
+                Past
+              </Button>
+              <Sheet open={pastChatsSheetOpen} onOpenChange={setPastChatsSheetOpen}>
+                <SheetContent side="left" className="w-72 max-w-[85vw]">
+                  <SheetHeader>
+                    <SheetTitle>Past Chats</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-4 overflow-y-auto pb-4">{pastChatsContent}</div>
+                </SheetContent>
+              </Sheet>
+            </>
           )}
           {messages.length > 0 && (
           <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive">
-                <Trash2 className="h-4 w-4" />
-                Delete chat
-              </Button>
-            </AlertDialogTrigger>
+            <AlertDialogTrigger
+              render={
+                <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                  Delete chat
+                </Button>
+              }
+            />
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete chat history?</AlertDialogTitle>

@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Debt, DebtCreate, DebtType } from "@/lib/types";
+import { useCurrency } from "@/contexts/currency-context";
+import { CURRENCIES } from "@/lib/currency";
 
 interface DebtFormProps {
   open: boolean;
@@ -35,6 +37,8 @@ const DEBT_TYPES: { value: DebtType; label: string }[] = [
 ];
 
 export function DebtForm({ open, onClose, onSubmit, editingDebt, loading }: DebtFormProps) {
+  const { currency } = useCurrency();
+  const currencySymbol = CURRENCIES.find((c) => c.code === currency)?.symbol ?? "$";
   const [provider, setProvider] = useState("");
   const [balance, setBalance] = useState("");
   const [interestRate, setInterestRate] = useState("");
@@ -108,7 +112,7 @@ export function DebtForm({ open, onClose, onSubmit, editingDebt, loading }: Debt
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="balance">Balance ($)</Label>
+              <Label htmlFor="balance">Balance ({currencySymbol})</Label>
               <Input
                 id="balance"
                 type="number"
@@ -138,7 +142,7 @@ export function DebtForm({ open, onClose, onSubmit, editingDebt, loading }: Debt
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="minimumPayment">Min Payment ($)</Label>
+              <Label htmlFor="minimumPayment">Min Payment ({currencySymbol})</Label>
               <Input
                 id="minimumPayment"
                 type="number"

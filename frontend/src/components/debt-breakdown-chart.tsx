@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Debt } from "@/lib/types";
+import { useCurrency } from "@/contexts/currency-context";
 
 const TYPE_LABELS: Record<string, string> = {
   bnpl: "BNPL",
@@ -23,6 +24,7 @@ interface DebtBreakdownChartProps {
 }
 
 export function DebtBreakdownChart({ debts }: DebtBreakdownChartProps) {
+  const { formatCurrency } = useCurrency();
   const grouped = debts.reduce<Record<string, number>>((acc, d) => {
     const key = d.debt_type;
     acc[key] = (acc[key] || 0) + d.balance;
@@ -69,7 +71,7 @@ export function DebtBreakdownChart({ debts }: DebtBreakdownChartProps) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value) => [`$${Number(value).toLocaleString()}`, ""]}
+              formatter={(value) => [formatCurrency(Number(value)), ""]}
             />
             <Legend />
           </PieChart>

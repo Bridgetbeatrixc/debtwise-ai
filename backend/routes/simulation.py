@@ -23,7 +23,7 @@ def simulate(body: SimulationRequest, user: dict = Depends(get_current_user), db
     if not debts:
         raise HTTPException(status_code=400, detail="No debts found to simulate")
 
-    result = simulate_payment(debts, body.extra_monthly_payment)
+    result = simulate_payment(debts, body.extra_monthly_payment, body.currency)
     return result
 
 

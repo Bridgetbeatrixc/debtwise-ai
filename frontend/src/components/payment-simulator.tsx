@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,9 +31,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseSimulator } from "@/components/purchase-simulator";
 import { exportRepaymentPlanPdf, openMailtoForDebtor } from "@/lib/pdf-utils";
+import { useCurrency } from "@/contexts/currency-context";
+import { getExtraPaymentRange } from "@/lib/currency";
 
 export function PaymentSimulator() {
+  const { formatCurrency, currency } = useCurrency();
+  const { max: sliderMax, step: sliderStep } = getExtraPaymentRange(currency);
   const [extraPayment, setExtraPayment] = useState(100);
+
+  useEffect(() => {
+    const { max } = getExtraPaymentRange(currency);
+    setExtraPayment((prev) => Math.min(prev, max));
+  }, [currency]);
   const [simResult, setSimResult] = useState<SimulationResult | null>(null);
   const [planResult, setPlanResult] = useState<RepaymentPlan | null>(null);
   const [strategy, setStrategy] = useState("avalanche");
@@ -50,7 +59,7 @@ export function PaymentSimulator() {
     }
     setSimulating(true);
     try {
-      const result = await simulatePayment(extraPayment);
+      const result = await simulatePayment(extraPayment, currency);
       setSimResult(result);
     } catch {
       toast.error("Failed to run simulation. Make sure you have debts added.");
@@ -62,7 +71,7 @@ export function PaymentSimulator() {
   async function handlePlan() {
     setPlanning(true);
     try {
-      const result = await getRepaymentPlan(strategy);
+      const result = await getRepaymentPlan(strategy, currency);
       setPlanResult(result);
     } catch {
       toast.error("Failed to generate plan. Make sure you have debts added.");
@@ -94,8 +103,7 @@ export function PaymentSimulator() {
     toast.success("Opening email client...");
   }
 
-  const fmt = (n: number) =>
-    n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const fmt = formatCurrency;
 
   return (
     <div className="space-y-6">
@@ -127,7 +135,7 @@ export function PaymentSimulator() {
                       Monthly Simulator
                     </CardTitle>
                     <Badge variant="outline" className="text-xs">
-                      +${extraPayment}/mo
+                      +{fmt(extraPayment)}/mo
                     </Badge>
                   </div>
                 </CardHeader>
@@ -135,22 +143,22 @@ export function PaymentSimulator() {
                   <div className="space-y-2">
                     <Label>Extra Monthly Payment</Label>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">$0</span>
+                      <span className="text-sm text-muted-foreground">{fmt(0)}</span>
                       <input
                         type="range"
                         min="0"
-                        max="5000"
-                        step="25"
-                        value={extraPayment}
+                        max={sliderMax}
+                        step={sliderStep}
+                        value={Math.min(extraPayment, sliderMax)}
                         onChange={(e) => setExtraPayment(Number(e.target.value))}
                         className="flex-1 accent-blue-600"
                       />
-                      <span className="text-sm text-muted-foreground">$5,000</span>
+                      <span className="text-sm text-muted-foreground">{fmt(sliderMax)}</span>
                     </div>
                     <Input
                       type="number"
                       min="0"
-                      step="25"
+                      step={sliderStep}
                       value={extraPayment}
                       onChange={(e) => setExtraPayment(Number(e.target.value))}
                       className="mt-2"
@@ -169,7 +177,7 @@ export function PaymentSimulator() {
                     <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 flex items-start gap-2.5">
                       <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                       <p className="text-sm text-blue-800">
-                        Adding <strong>${extraPayment}</strong> to your minimum payments will
+                        Adding <strong>{fmt(extraPayment)}</strong> to your minimum payments will
                         pay off your debt{" "}
                         <strong>{simResult.months_saved} month(s) faster</strong> and save{" "}
                         <strong>{fmt(simResult.interest_saved)}</strong> in interest.
@@ -342,7 +350,7 @@ export function PaymentSimulator() {
                     {planResult.strategy} Plan
                   </CardTitle>
                   <Badge variant="secondary">
-                    ${planResult.interest_saved.toLocaleString()} saved
+                    {fmt(planResult.interest_saved)} saved
                   </Badge>
                 </div>
               </CardHeader>
@@ -354,7 +362,7 @@ export function PaymentSimulator() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">
-                      ${planResult.monthly_payment.toLocaleString()}
+                      {fmt(planResult.monthly_payment)}
                     </p>
                     <p className="text-xs text-muted-foreground">Monthly</p>
                   </div>

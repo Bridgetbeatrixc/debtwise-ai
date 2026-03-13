@@ -30,6 +30,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCurrency } from "@/contexts/currency-context";
 
 const PROVIDER_PRESETS: Record<string, { rate: number; label: string }> = {
   "Shopee PayLater": { rate: 2.95, label: "Shopee PayLater (up to 2.95%/mo)" },
@@ -43,6 +44,7 @@ const PROVIDER_PRESETS: Record<string, { rate: number; label: string }> = {
 const INSTALLMENT_OPTIONS = [1, 3, 6, 9, 12, 18, 24];
 
 export function PurchaseSimulator() {
+  const { formatCurrency } = useCurrency();
   const [url, setUrl] = useState("");
   const [fetching, setFetching] = useState(false);
   const [productName, setProductName] = useState("");
@@ -72,7 +74,8 @@ export function PurchaseSimulator() {
     }
   }
 
-  function handleProviderChange(v: string) {
+  function handleProviderChange(v: string | null) {
+    if (!v) return;
     setProvider(v);
     const preset = PROVIDER_PRESETS[v];
     if (preset && preset.rate > 0) {
@@ -193,7 +196,7 @@ export function PurchaseSimulator() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Installment Months</Label>
-                <Select value={months} onValueChange={setMonths}>
+                <Select value={months} onValueChange={(v) => v && setMonths(v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -265,12 +268,12 @@ export function PurchaseSimulator() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Item Price</span>
-                  <span className="font-semibold">Rp {result.price.toLocaleString()}</span>
+                  <span className="font-semibold">{formatCurrency(result.price)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Monthly Installment</span>
                   <span className="font-semibold">
-                    Rp {result.monthly_installment.toLocaleString()}/mo x {months}
+                    {formatCurrency(result.monthly_installment)}/mo x {months}
                   </span>
                 </div>
                 <Separator />
@@ -287,7 +290,7 @@ export function PurchaseSimulator() {
                       Interest Markup
                     </span>
                     <span className="font-bold text-red-700">
-                      +Rp {result.interest_markup.toLocaleString()} ({result.interest_markup_pct}%)
+                      +{formatCurrency(result.interest_markup)} ({result.interest_markup_pct}%)
                     </span>
                   </div>
                 )}
@@ -340,7 +343,7 @@ export function PurchaseSimulator() {
                     <span>
                       Additional interest:{" "}
                       <strong className="text-red-700">
-                        Rp {result.extra_interest.toLocaleString()}
+                        {formatCurrency(result.extra_interest)}
                       </strong>
                     </span>
                   </div>

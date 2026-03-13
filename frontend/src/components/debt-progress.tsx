@@ -3,12 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Debt } from "@/lib/types";
+import { useCurrency } from "@/contexts/currency-context";
 
 interface DebtProgressProps {
   debts: Debt[];
 }
 
 export function DebtProgress({ debts }: DebtProgressProps) {
+  const { formatCurrency } = useCurrency();
+
   if (debts.length === 0) {
     return (
       <Card>
@@ -37,7 +40,7 @@ export function DebtProgress({ debts }: DebtProgressProps) {
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">{debt.provider}</span>
                 <span className="text-muted-foreground">
-                  ${debt.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  {formatCurrency(debt.balance)}
                 </span>
               </div>
               <Progress value={pct} className="h-2" />

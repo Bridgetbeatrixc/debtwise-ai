@@ -55,10 +55,12 @@ class ChatResponse(BaseModel):
 
 class SimulationRequest(BaseModel):
     extra_monthly_payment: float = Field(ge=0)
+    currency: Optional[str] = None
 
 
 class PlanRequest(BaseModel):
     strategy: str = Field(pattern="^(snowball|avalanche|cashflow)$")
+    currency: Optional[str] = None
 
 
 class PurchaseInfoRequest(BaseModel):
