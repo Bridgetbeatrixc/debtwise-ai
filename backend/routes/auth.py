@@ -1,16 +1,14 @@
+import bcrypt
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from jose import jwt
-from passlib.context import CryptContext
 
 from config import get_settings
 from database import get_db
 from models.user import UserCreate, UserLogin
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _create_access_token(user_id: str, email: str) -> str:
@@ -28,7 +26,10 @@ def signup(user: UserCreate, db=Depends(get_db)):
         if cur.fetchone():
             raise HTTPException(status_code=400, detail="Email already registered")
 
-        password_hash = pwd_context.hash(user.password)
+        password_hash = bcrypt.hashpw(
+            user.password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+
         cur.execute(
             """
             INSERT INTO users (email, password_hash)
@@ -63,7 +64,9 @@ def login(user: UserLogin, db=Depends(get_db)):
         )
         row = cur.fetchone()
 
-    if not row or not pwd_context.verify(user.password, row["password_hash"]):
+    if not row or not bcrypt.checkpw(
+        user.password.encode("utf-8"), row["password_hash"].encode("utf-8")
+    ):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = _create_access_token(str(row["id"]), row["email"])
