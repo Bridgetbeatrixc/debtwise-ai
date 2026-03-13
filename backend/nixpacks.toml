@@ -1,9 +1,8 @@
 # Railway/Nixpacks config for DebtWise backend
-[phases.setup]
-nixPkgs = ["python311"]
+providers = ["python"]
 
-[phases.install]
-cmds = ["pip install -r requirements.txt"]
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip"]
 
 [start]
 cmd = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"

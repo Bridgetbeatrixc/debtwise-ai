@@ -34,13 +34,15 @@ app = FastAPI(
     default_response_class=CustomJSONResponse,
 )
 
-# CORS: allow_credentials=True cannot be used with allow_origins=["*"].
-# We use JWT in Authorization header (no cookies), so credentials=False is fine.
-# This allows any origin (including all Vercel preview URLs) without CORS errors.
+# CORS: Explicitly allow Vercel (prod + preview) and local dev
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[
+        "https://debtwise-ai.vercel.app",
+        "http://localhost:3000",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",  # all Vercel preview deployments
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
