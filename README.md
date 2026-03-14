@@ -4,6 +4,14 @@ AI-powered debt calculator and management platform specializing in consumer debt
 
 ---
 
+## 🎥 Demo Video
+
+Watch the demonstration of the application in the video below:
+
+[![Watch the Demo](https://img.youtube.com/vi/fgl3zk9Di0I/0.jpg)](https://youtu.be/fgl3zk9Di0I)
+
+---
+
 ## Main Features
 
 ### 1. Debt Dashboard
