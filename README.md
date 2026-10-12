@@ -2,6 +2,10 @@
 
 AI-powered debt calculator and management platform specializing in consumer debt and Buy Now Pay Later (BNPL) services.
 
+**Live demo:** https://debtwise-ai.vercel.app
+
+Built with Next.js, FastAPI, PostgreSQL and Google Gemini.
+
 ---
 
 ## 🎥 Demo Video
